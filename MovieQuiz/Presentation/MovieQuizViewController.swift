@@ -58,8 +58,10 @@ final class MovieQuizViewController: UIViewController {
     
     // метод вывода на экран вопроса
     private func showQuestion(quiz step: QuizStepViewModel) {
+        
         imageView.image = step.image
         imageView.layer.borderWidth = 0
+        
         textLabel.text = step.quiestion
         counterLabel.text = step.questionNumber
         
@@ -108,11 +110,12 @@ final class MovieQuizViewController: UIViewController {
     
     //метод, который обрабатывает результат ответа
     private func showAnswerResult(isCorrect: Bool) {
+        
         buttonsStackView.isUserInteractionEnabled = false
         
         imageView.layer.masksToBounds = true
         imageView.layer.borderWidth = 8
-        imageView.layer.cornerRadius = 20
+        
         var color = UIColor.ypRed.cgColor
         if isCorrect {
             color = UIColor.ypGreen.cgColor
@@ -145,6 +148,9 @@ final class MovieQuizViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        imageView.layer.cornerRadius = 20
+        
         let startQuestion = questions[0]
         let startQuizStepViewModel = convertQuestion(model: startQuestion)
         showQuestion(quiz: startQuizStepViewModel)
