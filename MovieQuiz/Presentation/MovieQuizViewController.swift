@@ -28,9 +28,6 @@ final class MovieQuizViewController: UIViewController {
       let buttonText: String
     }
     
-    private var currentQuestionIndex = 0
-    private var correctAnswers = 0
-    
     private let questions: [QuizQuestion] = [
         QuizQuestion (image: "The Godfather", text: "Рейтинг этого фильма больше чем 6?", correctAnswer: true),
         QuizQuestion (image: "The Dark Knight", text: "Рейтинг этого фильма больше чем 6?", correctAnswer: true),
@@ -44,6 +41,10 @@ final class MovieQuizViewController: UIViewController {
         QuizQuestion (image: "Vivarium", text: "Рейтинг этого фильма больше чем 6?", correctAnswer: false)
     ]
     
+    private var currentQuestionIndex = 0
+    private var correctAnswers = 0
+    
+    //private var currentQuestion = questions[currentQuestionIndex]
     
     //метод конвертации, который принимает моковый вопрос и возвращает вью модель для экрана вопроса
     private func convertQuestion(model: QuizQuestion) -> QuizStepViewModel {
@@ -76,9 +77,12 @@ final class MovieQuizViewController: UIViewController {
             message: result.text,
             preferredStyle: .alert)
         
-        let action = UIAlertAction(title: result.buttonText, style: .default) { _ in
+        let action = UIAlertAction(title: result.buttonText, style: .default) { [weak self] _ in
+            guard let self = self else { return }
+            
             self.currentQuestionIndex = 0
             self.correctAnswers = 0
+            
             let firstQuestion = self.questions[self.currentQuestionIndex] // 2
             let viewModel = self.convertQuestion(model: firstQuestion)
             self.showQuestion(quiz: viewModel)
@@ -125,8 +129,10 @@ final class MovieQuizViewController: UIViewController {
         imageView.layer.borderColor = color
         
         // запускаем задачу через 1 секунду c помощью диспетчера задач
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [self] in
-           showNextQuestionOrResults()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+            guard let self = self else { return }
+            
+            self.showNextQuestionOrResults()
         }
     }
     
