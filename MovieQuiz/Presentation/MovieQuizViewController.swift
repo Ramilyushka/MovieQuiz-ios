@@ -94,6 +94,48 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
         }
     }
     
+    //метод для показа Алерта результатов раунда квиза
+    private func showQuizResultAlert(quiz result: QuizResultsViewModel) {
+        
+        let alertModel = AlertModel(
+            title: result.title,
+            message: result.text,
+            buttonText: result.buttonText,
+            completion: { [weak self] _ in
+                guard let self = self else { return }
+                
+                self.currentQuestionIndex = 0
+                self.correctAnswers = 0
+                
+                self.questionFactory?.requestNextQuestion()
+            })
+        
+        alertPresenter?.showAlert(controller: self, alertModel: alertModel)
+    }
+    
+    //метод для обновляем данные в кеше
+    private func updateTotalResult () -> String {
+        
+        statisticService?.store(correct: correctAnswers, total: questionsAmount)
+        
+        guard
+            let gameRecord = statisticService?.bestGame,
+            let gamesCount = statisticService?.gamesCount,
+            let totalAccuracy = statisticService?.totalAccuracy
+        else { return "\nНевозможно загрузить данные статистики" }
+        
+        //результат рекордной игры
+        let textRecord = "\nРекорд:\(gameRecord.correct)/\(gameRecord.total) (\(gameRecord.date.dateTimeString))"
+        
+        //количество сыгранных квизов
+        let textGamesCount = "\nКоличество сыгранных квизов: \(gamesCount)"
+        
+        //средняя точность
+        let textTotalAccuracy = "\nСредняя точность: \(String(format: "%.2f", totalAccuracy))"
+        
+        return textGamesCount + textRecord + textTotalAccuracy
+    }
+    
     //метод, который содержит логику перехода в один из сценариев: 1) завершить игру 2) продолжить игру
     private func showNextQuestionOrResults() {
         if currentQuestionIndex == questionsAmount - 1 {
@@ -103,40 +145,14 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
             "Поздравляем, Вы ответили на \(questionsAmount) из \(questionsAmount)!" :
             "Ваш результат: \(correctAnswers) /\(questionsAmount)"
             
-            //обновляем данные в кеше
-            statisticService?.store(correct: correctAnswers, total: questionsAmount)
+            let textAllResult = textCurrentResult + updateTotalResult()
+
+            let viewQuizResultModel = QuizResultsViewModel(
+                        title: "Этот раунд окончен!",
+                        text: textAllResult,
+                        buttonText: "Сыграть ещё раз")
             
-            guard
-                let gameRecord = statisticService?.bestGame,
-                let gamesCount = statisticService?.gamesCount,
-                let totalAccuracy = statisticService?.totalAccuracy
-            else { return }
-            
-            //результат рекордной игры
-            let textRecord = "\nРекорд:\(gameRecord.correct)/\(gameRecord.total) (\(gameRecord.date.dateTimeString))"
-            
-            //количество сыгранных квизов
-            let textGamesCount = "\nКоличество сыгранных квизов: \(gamesCount)"
-            
-            //средняя точность
-            let textTotalAccuracy = "\nСредняя точность: \(String(format: "%.2f", totalAccuracy))"
-            
-            let textAllResult = textCurrentResult + textGamesCount + textRecord + textTotalAccuracy
-            
-            let alertModel = AlertModel(
-                title: "Этот раунд окончен!",
-                message: textAllResult,
-                buttonText: "Сыграть ещё раз",
-                completion: { [weak self] _ in
-                    guard let self = self else { return }
-                    
-                    self.currentQuestionIndex = 0
-                    self.correctAnswers = 0
-                    
-                    self.questionFactory?.requestNextQuestion()
-                })
-            
-            alertPresenter?.showAlert(controller: self, alertModel: alertModel)
+            showQuizResultAlert(quiz: viewQuizResultModel)
             
         } else {
             currentQuestionIndex += 1
