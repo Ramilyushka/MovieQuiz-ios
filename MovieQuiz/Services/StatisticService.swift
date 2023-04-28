@@ -79,7 +79,7 @@ final class StatisticServiceImplementation: StatisticService {
         }
     }
     
-    //обновляем данные в кеше
+    ///обновляем данные в кеше
     func store(correct count: Int, total amount: Int) {
         
         let currentGame = GameRecord(correct: count, total: amount, date: Date())

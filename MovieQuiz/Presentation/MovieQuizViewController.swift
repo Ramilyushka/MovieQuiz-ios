@@ -113,10 +113,13 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
         alertPresenter?.showAlert(controller: self, alertModel: alertModel)
     }
     
-    //метод для обновляем данные в кеше
-    private func updateTotalResult () -> String {
+    //формируем текс с результатами текущей игры и данными статистики из кеша
+    private func getTotalResult () -> String {
         
-        statisticService?.store(correct: correctAnswers, total: questionsAmount)
+        //результат текущей игры
+        let textCurrentResult = correctAnswers == questionsAmount ?
+        "Поздравляем, Вы ответили на \(correctAnswers) из \(questionsAmount)!" :
+        "Ваш результат: \(correctAnswers)/\(questionsAmount)"
         
         guard
             let gameRecord = statisticService?.bestGame,
@@ -125,27 +128,25 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
         else { return "\nНевозможно загрузить данные статистики" }
         
         //результат рекордной игры
-        let textRecord = "\nРекорд:\(gameRecord.correct)/\(gameRecord.total) (\(gameRecord.date.dateTimeString))"
+        let textRecord = "\nРекорд: \(gameRecord.correct)/\(gameRecord.total) (\(gameRecord.date.dateTimeString))"
         
         //количество сыгранных квизов
         let textGamesCount = "\nКоличество сыгранных квизов: \(gamesCount)"
         
         //средняя точность
-        let textTotalAccuracy = "\nСредняя точность: \(String(format: "%.2f", totalAccuracy))"
+        let textTotalAccuracy = "\nСредняя точность: \(String(format: "%.2f", totalAccuracy))%"
         
-        return textGamesCount + textRecord + textTotalAccuracy
+        return textCurrentResult + textGamesCount + textRecord + textTotalAccuracy
     }
     
     //метод, который содержит логику перехода в один из сценариев: 1) завершить игру 2) продолжить игру
     private func showNextQuestionOrResults() {
         if currentQuestionIndex == questionsAmount - 1 {
             
-            //результат текущей игры
-            let textCurrentResult = correctAnswers == questionsAmount ?
-            "Поздравляем, Вы ответили на \(questionsAmount) из \(questionsAmount)!" :
-            "Ваш результат: \(correctAnswers) /\(questionsAmount)"
+            //обновляем данные в кеше
+            statisticService?.store(correct: correctAnswers, total: questionsAmount)
             
-            let textAllResult = textCurrentResult + updateTotalResult()
+            let textAllResult = getTotalResult()
 
             let viewQuizResultModel = QuizResultsViewModel(
                         title: "Этот раунд окончен!",
