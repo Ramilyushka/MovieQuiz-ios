@@ -1,6 +1,6 @@
 import UIKit
 
-final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, AlertPresenterDelegate {
+final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     // MARK: - Lifecycle
     
     @IBOutlet private var imageView: UIImageView!
@@ -20,7 +20,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
     
     private var alertPresenter: AlertPresenter?
     
-    //private var alertPresenter: AlertPresenter()
+    private var statisticService: StatisticService?
     
     // MARK: - Lifecycle
     override func viewDidLoad() {
@@ -33,6 +33,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
         
         alertPresenter = AlertPresenter()
         
+        statisticService = StatisticServiceImplementation()
     }
     
     // MARK: - QuestionFactoryDelegate
@@ -70,40 +71,6 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
         buttonsStackView.isUserInteractionEnabled = true
     }
     
-    // MARK: - AlertPresenterDelegate
-    func readyShowAlert(alertModel: AlertModel?) {
-        
-    }
-    
-    //метод, который содержит логику перехода в один из сценариев
-    private func showNextQuestionOrResults() {
-        if currentQuestionIndex == questionsAmount - 1 {
-            
-            let textResult = correctAnswers == questionsAmount ?
-            "Поздравляем, Вы ответили на \(questionsAmount) из \(questionsAmount)!" :
-            "Ваш результат: \(correctAnswers) /\(questionsAmount)"
-            
-            let alertModel = AlertModel(
-                title: "Этот раунд окончен!",
-                message: textResult,
-                buttonText: "Сыграть ещё раз",
-                completion: { [weak self] _ in
-                    guard let self = self else { return }
-                    
-                    self.currentQuestionIndex = 0
-                    self.correctAnswers = 0
-                    
-                    self.questionFactory?.requestNextQuestion()
-                })
-            
-            alertPresenter?.showAlert(controller: self, alertModel: alertModel)
-        } else {
-            currentQuestionIndex += 1
-            questionFactory?.requestNextQuestion()
-        }
-        
-    }
-    
     //метод, который обрабатывает результат ответа
     private func showAnswerResult(isCorrect: Bool) {
         
@@ -120,28 +87,73 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate, 
         
         imageView.layer.borderColor = color
         
-        // запускаем задачу через 1 секунду c помощью диспетчера задач
+        // запускаем задачу "Показ следующего вопроса" через 1 секунду c помощью диспетчера задач
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
             guard let self = self else { return }
-            
             self.showNextQuestionOrResults()
         }
     }
     
-    @IBAction private func yesButtonClicked(_ sender: Any) {
-//        if currentQuestionIndex < questionsAmount {
+    //метод, который содержит логику перехода в один из сценариев: 1) завершить игру 2) продолжить игру
+    private func showNextQuestionOrResults() {
+        if currentQuestionIndex == questionsAmount - 1 {
             
-            guard let currentQuestion = currentQuestion else { return }
-            showAnswerResult(isCorrect: currentQuestion.correctAnswer == true)
-//        }
+            //результат текущей игры
+            let textCurrentResult = correctAnswers == questionsAmount ?
+            "Поздравляем, Вы ответили на \(questionsAmount) из \(questionsAmount)!" :
+            "Ваш результат: \(correctAnswers) /\(questionsAmount)"
+            
+            //обновляем данные в кеше
+            statisticService?.store(correct: correctAnswers, total: questionsAmount)
+            
+            guard
+                let gameRecord = statisticService?.bestGame,
+                let gamesCount = statisticService?.gamesCount,
+                let totalAccuracy = statisticService?.totalAccuracy
+            else { return }
+            
+            //результат рекордной игры
+            let textRecord = "\nРекорд:\(gameRecord.correct)/\(gameRecord.total) (\(gameRecord.date.dateTimeString))"
+            
+            //количество сыгранных квизов
+            let textGamesCount = "\nКоличество сыгранных квизов: \(gamesCount)"
+            
+            //средняя точность
+            let textTotalAccuracy = "\nСредняя точность: \(String(format: "%.2f", totalAccuracy))"
+            
+            let textAllResult = textCurrentResult + textGamesCount + textRecord + textTotalAccuracy
+            
+            let alertModel = AlertModel(
+                title: "Этот раунд окончен!",
+                message: textAllResult,
+                buttonText: "Сыграть ещё раз",
+                completion: { [weak self] _ in
+                    guard let self = self else { return }
+                    
+                    self.currentQuestionIndex = 0
+                    self.correctAnswers = 0
+                    
+                    self.questionFactory?.requestNextQuestion()
+                })
+            
+            alertPresenter?.showAlert(controller: self, alertModel: alertModel)
+            
+        } else {
+            currentQuestionIndex += 1
+            questionFactory?.requestNextQuestion()
+        }
+    }
+    
+    @IBAction private func yesButtonClicked(_ sender: Any) {
+        
+        guard let currentQuestion = currentQuestion else { return }
+        showAnswerResult(isCorrect: currentQuestion.correctAnswer == true)
     }
     
     @IBAction private func noButtonClicked(_ sender: Any) {
-//        if currentQuestionIndex < questions.count {
-            
+        
         guard let currentQuestion = currentQuestion else { return }
-            showAnswerResult(isCorrect: currentQuestion.correctAnswer == false)
-//        }
+        showAnswerResult(isCorrect: currentQuestion.correctAnswer == false)
     }
     
 }

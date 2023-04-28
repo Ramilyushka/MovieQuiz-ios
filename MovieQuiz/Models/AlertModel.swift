@@ -13,6 +13,4 @@ struct AlertModel {
     let message: String
     let buttonText: String
     var completion: ((UIAlertAction) -> Void)?
-//    let action = UIAlertAction() { [weak self] _ in
-//        guard let self = self else { return }
 }
