@@ -6,9 +6,12 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     @IBOutlet private var imageView: UIImageView!
     @IBOutlet private var textLabel: UILabel!
     @IBOutlet private var counterLabel: UILabel!
-
-    
+    @IBOutlet weak var activityIndicator: UIActivityIndicatorView!
     @IBOutlet private var buttonsStackView: UIStackView!
+    
+    override var preferredStatusBarStyle: UIStatusBarStyle {
+            .lightContent
+        }
     
     private let questionsAmount: Int = 10
     private var questionFactory: QuestionFactoryProtocol?
@@ -28,15 +31,47 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
         
         imageView.layer.cornerRadius = 20
         
-        questionFactory = QuestionFactory(delegate: self)
-        questionFactory?.requestNextQuestion()
+        questionFactory = QuestionFactory(moviesLoader: MoviesLoader(), delegate: self)
+        
+        showLoadingIndicator()
+        questionFactory?.loadData()
         
         alertPresenter = AlertPresenter()
         
         statisticService = StatisticServiceImplementation()
     }
     
+    //отображение индикатора загрузки
+    private func showLoadingIndicator() {
+        activityIndicator.isHidden = false
+        activityIndicator.startAnimating()
+    }
+    
+    //отображение алерта с ошибкой загрузки данных вначале
+    private func showNetworkError(message: String) {
+        
+        activityIndicator.isHidden = true // скрываем индикатор загрузки
+        
+        let alertModel = AlertModel(
+            title: "Ошибка",
+            message: message,
+            buttonText: "Попробовать ещё раз",
+            completion: { [weak self] _ in
+                guard let self = self else { return }
+                
+                self.currentQuestionIndex = 0
+                self.correctAnswers = 0
+                
+                self.showLoadingIndicator()
+                self.questionFactory?.loadData() //пробуем снова загрузить данные после ошибки
+            })
+        
+        alertPresenter?.showAlert(controller: self, alertModel: alertModel)
+    }
+    
     // MARK: - QuestionFactoryDelegate
+    
+    //вопрос готов к показу
     func didReceiveNextQuestion(question: QuizQuestion?) {
         guard let question = question else { return }
         
@@ -48,22 +83,33 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
           }
     }
     
+    //данные о фильмах загружены
+    func didLoadDataFromServer() {
+        activityIndicator.isHidden = true
+        questionFactory?.requestNextQuestion()
+    }
+    
+    //произошла ошибка при загрузке данных о фильмах
+    func didFailToLoadData(with error: Error) {
+        showNetworkError(message: error.localizedDescription)
+    }
+    
     //метод конвертации, который принимает моковый вопрос и возвращает вью модель для экрана вопроса
     private func convertQuestion(model: QuizQuestion) -> QuizStepViewModel {
         
         let questionStep = QuizStepViewModel (
-            image: UIImage(named: model.image) ?? UIImage(),
+            image: UIImage(data: model.image) ?? UIImage(),
             quiestion: model.text,
             questionNumber: "\(currentQuestionIndex+1) /\(questionsAmount)" )
         
         return questionStep
     }
     
-    // метод вывода на экран вопроса
+    //метод вывода на экран вопроса
     private func showQuestion(quiz step: QuizStepViewModel) {
         
         imageView.image = step.image
-        imageView.layer.borderWidth = 0
+        imageView.layer.borderWidth = 0 //убираем ободок
         
         textLabel.text = step.quiestion
         counterLabel.text = step.questionNumber
@@ -71,10 +117,10 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
         buttonsStackView.isUserInteractionEnabled = true
     }
     
-    //метод, который обрабатывает результат ответа
+    //метод, который обрабатывает результат ответа: красный или зеленый ободок
     private func showAnswerResult(isCorrect: Bool) {
         
-        buttonsStackView.isUserInteractionEnabled = false
+        buttonsStackView.isUserInteractionEnabled = false //блокируем кнопки Да/Нет
         
         imageView.layer.masksToBounds = true
         imageView.layer.borderWidth = 8

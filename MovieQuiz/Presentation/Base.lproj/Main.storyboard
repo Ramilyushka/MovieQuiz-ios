@@ -52,7 +52,7 @@
                                             <constraint firstAttribute="width" secondItem="cAU-W4-0i8" secondAttribute="height" multiplier="2:3" id="SOj-oX-vMv"/>
                                         </constraints>
                                     </imageView>
-                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Рейтинг этого фильмы меньше чем 5?" textAlignment="center" lineBreakMode="tailTruncation" numberOfLines="2" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="b6N-4x-1Jz" userLabel="Question Label">
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Рейтинг этого фильмы меньше чем 7?" textAlignment="center" lineBreakMode="tailTruncation" numberOfLines="2" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="b6N-4x-1Jz" userLabel="Question Label">
                                         <rect key="frame" x="0.0" y="624.5" width="374" height="99.5"/>
                                         <fontDescription key="fontDescription" name="YSDisplay-Bold" family="YS Display" pointSize="23"/>
                                         <color key="textColor" name="YP White"/>
@@ -102,17 +102,23 @@
                                     </stackView>
                                 </subviews>
                             </stackView>
+                            <activityIndicatorView opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" style="medium" translatesAutoresizingMaskIntoConstraints="NO" id="YZ0-9U-CA2">
+                                <rect key="frame" x="197" y="438" width="20" height="20"/>
+                            </activityIndicatorView>
                         </subviews>
                         <viewLayoutGuide key="safeArea" id="6Tk-OE-BBY"/>
                         <color key="backgroundColor" name="YP Black"/>
                         <constraints>
                             <constraint firstItem="6Tk-OE-BBY" firstAttribute="bottom" secondItem="xmy-iW-vH5" secondAttribute="bottom" id="F0v-Xu-tww"/>
+                            <constraint firstItem="YZ0-9U-CA2" firstAttribute="centerY" secondItem="8bC-Xf-vdC" secondAttribute="centerY" id="K5y-cu-Zg5"/>
+                            <constraint firstItem="YZ0-9U-CA2" firstAttribute="centerX" secondItem="8bC-Xf-vdC" secondAttribute="centerX" id="M8a-zd-xHg"/>
                             <constraint firstItem="xmy-iW-vH5" firstAttribute="leading" secondItem="6Tk-OE-BBY" secondAttribute="leading" constant="20" id="e62-d0-K7V"/>
                             <constraint firstItem="6Tk-OE-BBY" firstAttribute="trailing" secondItem="xmy-iW-vH5" secondAttribute="trailing" constant="20" id="gHe-nD-Cyg"/>
                             <constraint firstItem="xmy-iW-vH5" firstAttribute="top" secondItem="6Tk-OE-BBY" secondAttribute="top" constant="10" id="v4a-s1-UbM"/>
                         </constraints>
                     </view>
                     <connections>
+                        <outlet property="activityIndicator" destination="YZ0-9U-CA2" id="9vM-0m-kQX"/>
                         <outlet property="buttonsStackView" destination="CFr-ql-CVd" id="PUN-wQ-d9W"/>
                         <outlet property="counterLabel" destination="ho9-7P-fX5" id="HOL-1H-iOf"/>
                         <outlet property="imageView" destination="cAU-W4-0i8" id="Lds-bU-zJ5"/>
