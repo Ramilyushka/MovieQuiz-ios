@@ -3,11 +3,11 @@ import UIKit
 final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     // MARK: - Lifecycle
     
-    @IBOutlet private var imageView: UIImageView!
-    @IBOutlet private var textLabel: UILabel!
-    @IBOutlet private var counterLabel: UILabel!
-    @IBOutlet weak var activityIndicator: UIActivityIndicatorView!
-    @IBOutlet private var buttonsStackView: UIStackView!
+    @IBOutlet private weak var imageView: UIImageView!
+    @IBOutlet private weak var textLabel: UILabel!
+    @IBOutlet private weak var counterLabel: UILabel!
+    @IBOutlet private weak var activityIndicator: UIActivityIndicatorView!
+    @IBOutlet private weak var buttonsStackView: UIStackView!
     
     override var preferredStatusBarStyle: UIStatusBarStyle {
             .lightContent
