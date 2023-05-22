@@ -49,25 +49,6 @@ final class MovieQuizViewController: UIViewController {
         activityIndicator.isHidden = true
     }
     
-    //отображение алерта с ошибкой загрузки данных вначале
-    func showNetworkError(message: String) {
-        
-        hideLoadingIndicator()
-        
-        let alertModel = AlertModel(
-            title: "Ошибка",
-            message: message,
-            buttonText: "Попробовать ещё раз",
-            completion: { [weak self] _ in
-                guard let self = self else { return }
-                
-                self.presenter.restartLoadData() //пробуем снова загрузить данные после ошибки
-                self.showLoadingIndicator()
-            })
-        
-        alertPresenter?.showAlert(controller: self, alertModel: alertModel)
-    }
-    
     //метод вывода на экран вопроса
     func showQuestion(quiz step: QuizStepViewModel) {
         
@@ -100,6 +81,25 @@ final class MovieQuizViewController: UIViewController {
                 guard let self = self else { return }
                 
                 self.presenter.restartGame()
+            })
+        
+        alertPresenter?.showAlert(controller: self, alertModel: alertModel)
+    }
+    
+    //отображение алерта с ошибкой загрузки данных вначале
+    func showNetworkError(message: String) {
+        
+        hideLoadingIndicator()
+        
+        let alertModel = AlertModel(
+            title: "Ошибка",
+            message: message,
+            buttonText: "Попробовать ещё раз",
+            completion: { [weak self] _ in
+                guard let self = self else { return }
+                
+                self.presenter.restartLoadData() //пробуем снова загрузить данные после ошибки
+                self.showLoadingIndicator()
             })
         
         alertPresenter?.showAlert(controller: self, alertModel: alertModel)

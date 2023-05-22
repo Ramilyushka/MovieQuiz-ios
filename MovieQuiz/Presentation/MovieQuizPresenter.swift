@@ -12,11 +12,11 @@ final class MovieQuizPresenter:QuestionFactoryDelegate {
     
     private weak var viewController: MovieQuizViewController?
     
-    let questionsAmount: Int = 10 //количество вопросов
+    private let questionsAmount: Int = 10 //количество вопросов
     private var questionFactory: QuestionFactoryProtocol? //фабрика вопросов
     
     private var currentQuestionIndex = 0 //индекс текущего вопроса
-    var currentQuestion: QuizQuestion? //текущий вопрос
+    private var currentQuestion: QuizQuestion? //текущий вопрос
     
     var correctAnswers = 0//количество правильных ответов в текущем раунде
     
@@ -114,7 +114,7 @@ final class MovieQuizPresenter:QuestionFactoryDelegate {
     }
     
     //логика перехода в один из сценариев: 1) завершить игру 2) продолжить игру
-    func proceedToNextQuestionOrResults() {
+    private func proceedToNextQuestionOrResults() {
        
         if self.isLastQuestion() {
             
@@ -137,7 +137,7 @@ final class MovieQuizPresenter:QuestionFactoryDelegate {
     }
     
     //метод, который обрабатывает результат ответа: красный или зеленый ободок
-    func proceedWithAnswer(isCorrect: Bool) {
+    private func proceedWithAnswer(isCorrect: Bool) {
         
         checkedAnswer(isCorrectAnswer: isCorrect)
         
