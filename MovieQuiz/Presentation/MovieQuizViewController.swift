@@ -34,6 +34,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
         questionFactory = QuestionFactory(moviesLoader: MoviesLoader(), delegate: self)
         
         showLoadingIndicator()
+        buttonsStackView.isUserInteractionEnabled = false //блокируем кнопки Да/Нет
         questionFactory?.loadData()
         
         alertPresenter = AlertPresenter()
@@ -100,7 +101,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
         let questionStep = QuizStepViewModel (
             image: UIImage(data: model.image) ?? UIImage(),
             quiestion: model.text,
-            questionNumber: "\(currentQuestionIndex+1) /\(questionsAmount)" )
+            questionNumber: "\(currentQuestionIndex+1)/\(questionsAmount)" )
         
         return questionStep
     }
@@ -114,7 +115,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
         textLabel.text = step.quiestion
         counterLabel.text = step.questionNumber
         
-        buttonsStackView.isUserInteractionEnabled = true
+        buttonsStackView.isUserInteractionEnabled = true //РАЗблокируем кнопки Да/Нет
     }
     
     //метод, который обрабатывает результат ответа: красный или зеленый ободок
