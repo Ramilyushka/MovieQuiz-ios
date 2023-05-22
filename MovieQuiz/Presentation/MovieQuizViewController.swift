@@ -17,8 +17,6 @@ final class MovieQuizViewController: UIViewController {
     
     private var alertPresenter: AlertPresenter?
     
-    private var statisticService: StatisticService?
-    
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -28,8 +26,6 @@ final class MovieQuizViewController: UIViewController {
         presenter = MovieQuizPresenter(viewController: self)
         
         alertPresenter = AlertPresenter()
-        
-        statisticService = StatisticServiceImplementation()
         
         buttonsStackView.isUserInteractionEnabled = false //блокируем кнопки Да/Нет
     }
@@ -84,28 +80,17 @@ final class MovieQuizViewController: UIViewController {
         buttonsStackView.isUserInteractionEnabled = true //РАЗблокируем кнопки Да/Нет
     }
     
-    //метод, который обрабатывает результат ответа: красный или зеленый ободок
-    func showAnswerResult(isCorrect: Bool) {
+    func highlightImageBorder(isCorrectAnswer: Bool) {
         
-        buttonsStackView.isUserInteractionEnabled = false //блокируем кнопки Да/Нет
-        
-        imageView.layer.masksToBounds = true
-        imageView.layer.borderWidth = 8
-        imageView.layer.borderColor = isCorrect ? UIColor.ypGreen.cgColor : UIColor.ypRed.cgColor
-        
-        presenter.checkedAnswer(isCorrectAnswer: isCorrect)
-       
-        // запускаем задачу "Показ следующего вопроса" через 1 секунду c помощью диспетчера задач
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-            guard let self = self else { return }
-            self.presenter.showNextQuestionOrResults()
-        }
+            imageView.layer.masksToBounds = true
+            imageView.layer.borderWidth = 8
+            imageView.layer.borderColor = isCorrectAnswer ? UIColor.ypGreen.cgColor : UIColor.ypRed.cgColor
     }
     
     //метод для показа Алерта результатов раунда квиза
     func showQuizResultAlert(quiz result: QuizResultsViewModel) {
         
-        let message = result.text + getStatisticResult()
+        let message = result.text + presenter.makeStatisticMessage()
         
         let alertModel = AlertModel(
             title: result.title,
@@ -118,30 +103,6 @@ final class MovieQuizViewController: UIViewController {
             })
         
         alertPresenter?.showAlert(controller: self, alertModel: alertModel)
-    }
-    
-    //формируем текст с данными статистики из кеша
-    func getStatisticResult () -> String {
-        
-        //обновляем данные в кеше
-        statisticService?.store(correct: presenter.correctAnswers, total: presenter.questionsAmount)
-        
-        guard
-            let gameRecord = statisticService?.bestGame,
-            let gamesCount = statisticService?.gamesCount,
-            let totalAccuracy = statisticService?.totalAccuracy
-        else { return "\nНевозможно загрузить данные статистики" }
-        
-        //результат рекордной игры
-        let textRecord = "\nРекорд: \(gameRecord.correct)/\(gameRecord.total) (\(gameRecord.date.dateTimeString))"
-        
-        //количество сыгранных квизов
-        let textGamesCount = "\nКоличество сыгранных квизов: \(gamesCount)"
-        
-        //средняя точность
-        let textTotalAccuracy = "\nСредняя точность: \(String(format: "%.2f", totalAccuracy))%"
-        
-        return textGamesCount + textRecord + textTotalAccuracy
     }
 }
 

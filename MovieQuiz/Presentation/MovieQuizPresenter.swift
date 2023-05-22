@@ -20,8 +20,11 @@ final class MovieQuizPresenter:QuestionFactoryDelegate {
     
     var correctAnswers = 0//количество правильных ответов в текущем раунде
     
+    private let statisticService: StatisticService!
     
     init(viewController: MovieQuizViewController) {
+        
+        statisticService = StatisticServiceImplementation()
         
         self.viewController = viewController
         
@@ -100,7 +103,7 @@ final class MovieQuizPresenter:QuestionFactoryDelegate {
    private func didAnswer(isYes: Bool) {
        
        guard let currentQuestion = currentQuestion else { return }
-       viewController?.showAnswerResult(isCorrect: currentQuestion.correctAnswer == isYes)
+       proceedWithAnswer(isCorrect: currentQuestion.correctAnswer == isYes)
     }
     
     //проверили правильность ответа
@@ -111,7 +114,7 @@ final class MovieQuizPresenter:QuestionFactoryDelegate {
     }
     
     //логика перехода в один из сценариев: 1) завершить игру 2) продолжить игру
-    func showNextQuestionOrResults() {
+    func proceedToNextQuestionOrResults() {
        
         if self.isLastQuestion() {
             
@@ -131,5 +134,41 @@ final class MovieQuizPresenter:QuestionFactoryDelegate {
             self.switchToNextQuestion()
             questionFactory?.requestNextQuestion()
         }
+    }
+    
+    //метод, который обрабатывает результат ответа: красный или зеленый ободок
+    func proceedWithAnswer(isCorrect: Bool) {
+        
+        checkedAnswer(isCorrectAnswer: isCorrect)
+        
+        viewController?.highlightImageBorder(isCorrectAnswer: isCorrect)
+       
+        // запускаем задачу "Показ следующего вопроса" через 1 секунду c помощью диспетчера задач
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+            guard let self = self else { return }
+            self.proceedToNextQuestionOrResults()
+        }
+    }
+    
+    //формируем текст с данными статистики из кеша
+    func makeStatisticMessage () -> String {
+        
+        //обновляем данные в кеше
+        statisticService.store(correct: self.correctAnswers, total: self.questionsAmount)
+        
+        let gameRecord = statisticService.bestGame
+        let gamesCount = statisticService.gamesCount
+        let totalAccuracy = statisticService.totalAccuracy
+        
+        //результат рекордной игры
+        let textRecord = "\nРекорд: \(gameRecord.correct)/\(gameRecord.total) (\(gameRecord.date.dateTimeString))"
+        
+        //количество сыгранных квизов
+        let textGamesCount = "\nКоличество сыгранных квизов: \(gamesCount)"
+        
+        //средняя точность
+        let textTotalAccuracy = "\nСредняя точность: \(String(format: "%.2f", totalAccuracy))%"
+        
+        return textGamesCount + textRecord + textTotalAccuracy
     }
 }
