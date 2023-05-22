@@ -17,8 +17,6 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     
     private var questionFactory: QuestionFactoryProtocol?
     
-    private var currentQuestion: QuizQuestion?
-    
     private var correctAnswers = 0
     
     private var alertPresenter: AlertPresenter?
@@ -42,6 +40,14 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
         alertPresenter = AlertPresenter()
         
         statisticService = StatisticServiceImplementation()
+    }
+    
+    @IBAction private func yesButtonClicked(_ sender: Any) {
+        presenter.yesButtonClicked()
+    }
+    
+    @IBAction private func noButtonClicked(_ sender: Any) {
+        presenter.noButtonClicked()
     }
     
     //отображение индикатора загрузки
@@ -76,14 +82,8 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     
     //вопрос готов к показу
     func didReceiveNextQuestion(question: QuizQuestion?) {
-        guard let question = question else { return }
         
-        currentQuestion = question
-        let viewModel = presenter.convertQuestion(model: question)
-        
-        DispatchQueue.main.async { [weak self] in
-              self?.showQuestion(quiz: viewModel)
-          }
+        presenter.didReceiveNextQuestion(question: question)
     }
     
     //данные о фильмах загружены
@@ -98,7 +98,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     }
     
     //метод вывода на экран вопроса
-    private func showQuestion(quiz step: QuizStepViewModel) {
+    func showQuestion(quiz step: QuizStepViewModel) {
         
         imageView.image = step.image
         imageView.layer.borderWidth = 0 //убираем ободок
@@ -128,16 +128,20 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
         // запускаем задачу "Показ следующего вопроса" через 1 секунду c помощью диспетчера задач
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
             guard let self = self else { return }
-            self.showNextQuestionOrResults()
+            self.presenter.correctAnswers = self.correctAnswers
+            self.presenter.questionFactory = self.questionFactory
+            self.presenter.showNextQuestionOrResults()
         }
     }
     
     //метод для показа Алерта результатов раунда квиза
-    private func showQuizResultAlert(quiz result: QuizResultsViewModel) {
+    func showQuizResultAlert(quiz result: QuizResultsViewModel) {
+        
+        let message = result.text + getStatisticResult()
         
         let alertModel = AlertModel(
             title: result.title,
-            message: result.text,
+            message: message,
             buttonText: result.buttonText,
             completion: { [weak self] _ in
                 guard let self = self else { return }
@@ -151,13 +155,11 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
         alertPresenter?.showAlert(controller: self, alertModel: alertModel)
     }
     
-    //формируем текс с результатами текущей игры и данными статистики из кеша
-    private func getTotalResult () -> String {
+    //формируем текст с данными статистики из кеша
+    func getStatisticResult () -> String {
         
-        //результат текущей игры
-        let textCurrentResult = correctAnswers == presenter.questionsAmount ?
-        "Поздравляем, Вы ответили на \(correctAnswers) из \(presenter.questionsAmount)!" :
-        "Ваш результат: \(correctAnswers)/\(presenter.questionsAmount)"
+        //обновляем данные в кеше
+        statisticService?.store(correct: correctAnswers, total: presenter.questionsAmount)
         
         guard
             let gameRecord = statisticService?.bestGame,
@@ -174,43 +176,8 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
         //средняя точность
         let textTotalAccuracy = "\nСредняя точность: \(String(format: "%.2f", totalAccuracy))%"
         
-        return textCurrentResult + textGamesCount + textRecord + textTotalAccuracy
+        return textGamesCount + textRecord + textTotalAccuracy
     }
-    
-    //метод, который содержит логику перехода в один из сценариев: 1) завершить игру 2) продолжить игру
-    private func showNextQuestionOrResults() {
-        if presenter.isLastQuestion() {
-            
-            //обновляем данные в кеше
-            statisticService?.store(correct: correctAnswers, total: presenter.questionsAmount)
-            
-            let textAllResult = getTotalResult()
-
-            let viewQuizResultModel = QuizResultsViewModel(
-                        title: "Этот раунд окончен!",
-                        text: textAllResult,
-                        buttonText: "Сыграть ещё раз")
-            
-            showQuizResultAlert(quiz: viewQuizResultModel)
-            
-        } else {
-            presenter.switchToNextQuestion()
-            questionFactory?.requestNextQuestion()
-        }
-    }
-    
-    @IBAction private func yesButtonClicked(_ sender: Any) {
-        
-        presenter.currentQuestion = currentQuestion
-        presenter.yesButtonClicked()
-    }
-    
-    @IBAction private func noButtonClicked(_ sender: Any) {
-        
-        presenter.currentQuestion = currentQuestion
-        presenter.noButtonClicked()
-    }
-    
 }
 
 /*
