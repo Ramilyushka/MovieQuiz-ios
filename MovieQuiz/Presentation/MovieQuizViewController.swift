@@ -13,10 +13,10 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
             .lightContent
         }
     
-    private let questionsAmount: Int = 10
+    private let presenter = MovieQuizPresenter()
+    
     private var questionFactory: QuestionFactoryProtocol?
     
-    private var currentQuestionIndex = 0
     private var currentQuestion: QuizQuestion?
     
     private var correctAnswers = 0
@@ -60,7 +60,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
             completion: { [weak self] _ in
                 guard let self = self else { return }
                 
-                self.currentQuestionIndex = 0
+                self.presenter.resetQuesionIndex()
                 self.correctAnswers = 0
                 
                 self.showLoadingIndicator()
@@ -77,7 +77,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
         guard let question = question else { return }
         
         currentQuestion = question
-        let viewModel = convertQuestion(model: question)
+        let viewModel = presenter.convertQuestion(model: question)
         
         DispatchQueue.main.async { [weak self] in
               self?.showQuestion(quiz: viewModel)
@@ -93,17 +93,6 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     //произошла ошибка при загрузке данных о фильмах
     func didFailToLoadData(with error: Error) {
         showNetworkError(message: error.localizedDescription)
-    }
-    
-    //метод конвертации, который принимает моковый вопрос и возвращает вью модель для экрана вопроса
-    private func convertQuestion(model: QuizQuestion) -> QuizStepViewModel {
-        
-        let questionStep = QuizStepViewModel (
-            image: UIImage(data: model.image) ?? UIImage(),
-            quiestion: model.text,
-            questionNumber: "\(currentQuestionIndex+1)/\(questionsAmount)" )
-        
-        return questionStep
     }
     
     //метод вывода на экран вопроса
@@ -151,7 +140,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
             completion: { [weak self] _ in
                 guard let self = self else { return }
                 
-                self.currentQuestionIndex = 0
+                self.presenter.resetQuesionIndex()
                 self.correctAnswers = 0
                 
                 self.questionFactory?.requestNextQuestion()
@@ -164,9 +153,9 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     private func getTotalResult () -> String {
         
         //результат текущей игры
-        let textCurrentResult = correctAnswers == questionsAmount ?
-        "Поздравляем, Вы ответили на \(correctAnswers) из \(questionsAmount)!" :
-        "Ваш результат: \(correctAnswers)/\(questionsAmount)"
+        let textCurrentResult = correctAnswers == presenter.questionsAmount ?
+        "Поздравляем, Вы ответили на \(correctAnswers) из \(presenter.questionsAmount)!" :
+        "Ваш результат: \(correctAnswers)/\(presenter.questionsAmount)"
         
         guard
             let gameRecord = statisticService?.bestGame,
@@ -188,10 +177,10 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     
     //метод, который содержит логику перехода в один из сценариев: 1) завершить игру 2) продолжить игру
     private func showNextQuestionOrResults() {
-        if currentQuestionIndex == questionsAmount - 1 {
+        if presenter.isLastQuestion() {
             
             //обновляем данные в кеше
-            statisticService?.store(correct: correctAnswers, total: questionsAmount)
+            statisticService?.store(correct: correctAnswers, total: presenter.questionsAmount)
             
             let textAllResult = getTotalResult()
 
@@ -203,7 +192,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
             showQuizResultAlert(quiz: viewQuizResultModel)
             
         } else {
-            currentQuestionIndex += 1
+            presenter.switchToNextQuestion()
             questionFactory?.requestNextQuestion()
         }
     }
