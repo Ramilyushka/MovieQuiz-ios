@@ -1,6 +1,6 @@
 import UIKit
 
-final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
+final class MovieQuizViewController: UIViewController {
     // MARK: - Lifecycle
     
     @IBOutlet private weak var imageView: UIImageView!
@@ -13,11 +13,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
             .lightContent
         }
     
-    private let presenter = MovieQuizPresenter()
-    
-    private var questionFactory: QuestionFactoryProtocol?
-    
-    private var correctAnswers = 0
+    private var presenter: MovieQuizPresenter!
     
     private var alertPresenter: AlertPresenter?
     
@@ -29,17 +25,13 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
         
         imageView.layer.cornerRadius = 20
         
-        presenter.viewController = self
-        
-        questionFactory = QuestionFactory(moviesLoader: MoviesLoader(), delegate: self)
-        
-        showLoadingIndicator()
-        buttonsStackView.isUserInteractionEnabled = false //блокируем кнопки Да/Нет
-        questionFactory?.loadData()
+        presenter = MovieQuizPresenter(viewController: self)
         
         alertPresenter = AlertPresenter()
         
         statisticService = StatisticServiceImplementation()
+        
+        buttonsStackView.isUserInteractionEnabled = false //блокируем кнопки Да/Нет
     }
     
     @IBAction private func yesButtonClicked(_ sender: Any) {
@@ -51,15 +43,20 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     }
     
     //отображение индикатора загрузки
-    private func showLoadingIndicator() {
+    func showLoadingIndicator() {
         activityIndicator.isHidden = false
         activityIndicator.startAnimating()
     }
     
+    //скрываем индикатора загрузки
+    func hideLoadingIndicator() {
+        activityIndicator.isHidden = true
+    }
+    
     //отображение алерта с ошибкой загрузки данных вначале
-    private func showNetworkError(message: String) {
+    func showNetworkError(message: String) {
         
-        activityIndicator.isHidden = true // скрываем индикатор загрузки
+        hideLoadingIndicator()
         
         let alertModel = AlertModel(
             title: "Ошибка",
@@ -68,33 +65,11 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
             completion: { [weak self] _ in
                 guard let self = self else { return }
                 
-                self.presenter.resetQuesionIndex()
-                self.correctAnswers = 0
-                
+                self.presenter.restartLoadData() //пробуем снова загрузить данные после ошибки
                 self.showLoadingIndicator()
-                self.questionFactory?.loadData() //пробуем снова загрузить данные после ошибки
             })
         
         alertPresenter?.showAlert(controller: self, alertModel: alertModel)
-    }
-    
-    // MARK: - QuestionFactoryDelegate
-    
-    //вопрос готов к показу
-    func didReceiveNextQuestion(question: QuizQuestion?) {
-        
-        presenter.didReceiveNextQuestion(question: question)
-    }
-    
-    //данные о фильмах загружены
-    func didLoadDataFromServer() {
-        activityIndicator.isHidden = true
-        questionFactory?.requestNextQuestion()
-    }
-    
-    //произошла ошибка при загрузке данных о фильмах
-    func didFailToLoadData(with error: Error) {
-        showNetworkError(message: error.localizedDescription)
     }
     
     //метод вывода на экран вопроса
@@ -116,20 +91,13 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
         
         imageView.layer.masksToBounds = true
         imageView.layer.borderWidth = 8
+        imageView.layer.borderColor = isCorrect ? UIColor.ypGreen.cgColor : UIColor.ypRed.cgColor
         
-        var color = UIColor.ypRed.cgColor
-        if isCorrect {
-            color = UIColor.ypGreen.cgColor
-            correctAnswers += 1
-        }
-        
-        imageView.layer.borderColor = color
-        
+        presenter.checkedAnswer(isCorrectAnswer: isCorrect)
+       
         // запускаем задачу "Показ следующего вопроса" через 1 секунду c помощью диспетчера задач
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
             guard let self = self else { return }
-            self.presenter.correctAnswers = self.correctAnswers
-            self.presenter.questionFactory = self.questionFactory
             self.presenter.showNextQuestionOrResults()
         }
     }
@@ -146,10 +114,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
             completion: { [weak self] _ in
                 guard let self = self else { return }
                 
-                self.presenter.resetQuesionIndex()
-                self.correctAnswers = 0
-                
-                self.questionFactory?.requestNextQuestion()
+                self.presenter.restartGame()
             })
         
         alertPresenter?.showAlert(controller: self, alertModel: alertModel)
@@ -159,7 +124,7 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     func getStatisticResult () -> String {
         
         //обновляем данные в кеше
-        statisticService?.store(correct: correctAnswers, total: presenter.questionsAmount)
+        statisticService?.store(correct: presenter.correctAnswers, total: presenter.questionsAmount)
         
         guard
             let gameRecord = statisticService?.bestGame,
